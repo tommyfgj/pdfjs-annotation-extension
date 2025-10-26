@@ -223,6 +223,25 @@ export class Painter {
     }
 
     /**
+     * 切换到新 PDF 文档时重置所有内部状态，避免侧栏重复加载
+     */
+    public resetForNewDocument(): void {
+        // 清理连接线
+        try { (this as any).connectorLine?.clearConnection?.() } catch {}
+        // 清空批注存储
+        this.store.clear()
+        // 销毁并清空所有 Konva 画布
+        this.konvaCanvasStore.forEach(({ konvaStage, pageNumber }) => {
+            try { konvaStage.destroy() } catch {}
+            this.konvaCanvasStore.delete(pageNumber)
+        })
+        // 清空编辑器缓存
+        this.editorStore.clear()
+        // 关闭选择器状态
+        this.selector.clear()
+    }
+
+    /**
      * 插入新的绘图容器和 Konva Stage
      * @param pageView - 当前 PDF 页面视图
      * @param pageNumber - 当前页码

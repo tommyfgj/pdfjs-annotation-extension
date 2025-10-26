@@ -33,7 +33,7 @@ function getRGB(color: string): number[] {
     return [0, 0, 0]
 }
 
-function rgbToPdfColor(input: string | undefined): [number, number, number] {
+function rgbToPdfColor(input?: string | null): [number, number, number] {
     if (!input) return [1, 1, 0] // 默认黄色
 
     // 支持 rgb(...) 格式

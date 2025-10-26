@@ -108,7 +108,7 @@ const CustomAnnotationMenu = forwardRef<CustomAnnotationMenuRef, CustomAnnotatio
         setShowStyle(false)
     }
 
-    const isStyleSupported = currentAnnotation && annotationDefinitions.find(item => item.type === currentAnnotation.type)?.styleEditable
+    const isStyleSupported: { color?: boolean; opacity?: boolean; strokeWidth?: boolean } = currentAnnotation ? (annotationDefinitions.find(item => item.type === currentAnnotation.type)?.styleEditable || {}) : {}
 
     const handleAnnotationStyleChange = (style: IAnnotationStyle) => {
         if (!currentAnnotation) return
@@ -124,7 +124,7 @@ const CustomAnnotationMenu = forwardRef<CustomAnnotationMenuRef, CustomAnnotatio
                             isStyleSupported.color && (
                                 <div className="colorPalette">
                                     {defaultOptions.colors.map(color => (
-                                        <div key={color} className={`cell ${isSameColor(color, currentColor) ? 'active' : ''}`} onMouseDown={() => {
+                                        <div key={color} className={`cell ${isSameColor(color, currentColor || color) ? 'active' : ''}`} onMouseDown={() => {
                                             handleAnnotationStyleChange({ color })
                                             setCurrentColor(color)
                                         }}>

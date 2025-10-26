@@ -1,4 +1,5 @@
-.PdfjsAnnotationExtension_Comment_hidden {
+// 只有当两个侧边栏都隐藏时，才隐藏占位符
+.PdfjsAnnotationExtension_Comment_hidden.PdfjsAnnotationExtension_ChatSidebar_hidden {
     .CustomToolbar::after {
         display: none;
     }

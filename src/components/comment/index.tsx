@@ -22,6 +22,7 @@ import {
     CloudIcon
 } from '../../const/icon'
 import Paragraph from 'antd/es/typography/Paragraph'
+import { MarkdownContent } from '../common/MarkdownContent'
 
 interface StatusOption {
     labelKey: string; // i18n key
@@ -97,6 +98,7 @@ interface CustomCommentProps {
     onUpdate: (annotation: IAnnotationStore) => void
     onDelete: (id: string) => void
     onScroll?: () => void
+    getPageText?: (pageNumber: number) => Promise<string>
 }
 
 export interface CustomCommentRef {
@@ -104,6 +106,7 @@ export interface CustomCommentRef {
     delAnnotation(id: string): void
     updateAnnotation(annotation: IAnnotationStore): void
     selectedAnnotation(annotation: IAnnotationStore, isClick: boolean): void
+    clearAnnotations(): void
 }
 
 /**
@@ -120,12 +123,15 @@ const CustomComment = forwardRef<CustomCommentRef, CustomCommentProps>(function 
     const { t } = useTranslation()
 
     const annotationRefs = useRef<Record<string, HTMLDivElement | null>>({})
+    const [expandedCommentIds, setExpandedCommentIds] = useState<Record<string, boolean>>({})
+    const [expandedReplyIds, setExpandedReplyIds] = useState<Record<string, boolean>>({})
 
     useImperativeHandle(ref, () => ({
         addAnnotation,
         delAnnotation,
         selectedAnnotation,
-        updateAnnotation
+        updateAnnotation,
+        clearAnnotations
     }))
 
     const addAnnotation = (annotation: IAnnotationStore) => {
@@ -144,13 +150,22 @@ const CustomComment = forwardRef<CustomCommentRef, CustomCommentProps>(function 
         setCurrentReply(null)
     }
 
+    const clearAnnotations = () => {
+        setAnnotations([])
+        setCurrentAnnotation(null)
+        setReplyAnnotation(null)
+        setCurrentReply(null)
+        setExpandedCommentIds({})
+        setExpandedReplyIds({})
+    }
+
     const selectedAnnotation = (annotation: IAnnotationStore, isClick: boolean) => {
         setCurrentAnnotation(annotation)
 
         if (!isClick) return
 
         const isOwn = annotation.title === props.userName
-        const isEmptyComment = annotation.contentsObj.text === ''
+        const isEmptyComment = (annotation.contentsObj?.text || '') === ''
 
         // 👇 根据批注归属与内容决定打开评论或回复
         if (isOwn && isEmptyComment) {
@@ -170,13 +185,18 @@ const CustomComment = forwardRef<CustomCommentRef, CustomCommentProps>(function 
         setAnnotations(prevAnnotations =>
             prevAnnotations.map(annotation => {
                 if (annotation.id === updatedAnnotation.id) {
-                    // 更新内容、颜色或其他属性
-                    const newAnnotation = {
+                    // 合并所有可能被更新的字段，确保文本与评论不会被丢弃
+                    const merged = {
                         ...annotation,
-                        konvaClientRect: updatedAnnotation.konvaClientRect,
+                        title: updatedAnnotation.title ?? annotation.title,
+                        contentsObj: updatedAnnotation.contentsObj ?? annotation.contentsObj,
+                        comments: updatedAnnotation.comments ?? annotation.comments,
+                        color: updatedAnnotation.color ?? annotation.color,
+                        konvaClientRect: updatedAnnotation.konvaClientRect ?? annotation.konvaClientRect,
                         date: formatTimestamp(Date.now()) // 更新最后修改时间
                     }
-                    return newAnnotation
+                    console.log('[Comment] updateAnnotation merged:', { id: merged.id, textLen: merged.contentsObj?.text?.length })
+                    return merged
                 }
                 return annotation
             })
@@ -305,7 +325,9 @@ const CustomComment = forwardRef<CustomCommentRef, CustomCommentProps>(function 
     }
 
     const updateComment = (annotation: IAnnotationStore, comment: string) => {
-        annotation.contentsObj.text = comment
+        const prev = annotation.contentsObj?.text || ''
+        annotation.contentsObj = { ...(annotation.contentsObj || {}), text: comment }
+        console.log('[Comment] updateComment:', { id: annotation.id, prevLen: prev?.length, newLen: comment?.length })
         props.onUpdate(annotation)
     }
 
@@ -389,7 +411,7 @@ const CustomComment = forwardRef<CustomCommentRef, CustomCommentProps>(function 
                 return (
                     <>
                         <TextArea
-                            defaultValue={annotation.contentsObj.text}
+                            defaultValue={annotation.contentsObj?.text || ''}
                             autoFocus
                             rows={4}
                             style={{ marginBottom: '8px', marginTop: '8px' }}
@@ -412,9 +434,162 @@ const CustomComment = forwardRef<CustomCommentRef, CustomCommentProps>(function 
                     </>
                 )
             }
-            return <Paragraph style={{ margin: '8px 0 8px 15px'}} ellipsis={{ rows: 3, expandable: true, symbol: t('normal.more') }}>{annotation.contentsObj.text}</Paragraph>
+            const rawText = annotation.contentsObj?.text || ''
+            const displayText = annotation.contentsObj?.displayText || rawText
+            const lineCount = displayText.split(/\r?\n/).length
+            const isLong = (lineCount > 10)
+            const isExpanded = !!expandedCommentIds[annotation.id]
+            
+            // 压缩连续页码的辅助函数
+            const compressContinuousPages = (pages: number[]): Array<{ type: 'range', start: number, end: number } | { type: 'single', page: number }> => {
+                const sorted = [...pages].sort((a, b) => a - b)
+                const res: Array<{ type: 'range', start: number, end: number } | { type: 'single', page: number }> = []
+                let i = 0
+                while (i < sorted.length) {
+                    const start = sorted[i]
+                    let end = start
+                    while (i + 1 < sorted.length && sorted[i + 1] === end + 1) { i++; end++ }
+                    if (start === end) res.push({ type: 'single', page: start })
+                    else res.push({ type: 'range', start, end })
+                    i++
+                }
+                return res
+            }
+            
+            // 附件内容加载组件
+            const AttachmentPopoverContent: React.FC<{ pages: number[] }> = ({ pages }) => {
+                const [loading, setLoading] = useState(true)
+                const [content, setContent] = useState<string>('')
+                
+                useEffect(() => {
+                    const loadContent = async () => {
+                        if (!props.getPageText) {
+                            setContent('无法获取页面文本')
+                            setLoading(false)
+                            return
+                        }
+                        
+                        setLoading(true)
+                        try {
+                            const texts: string[] = []
+                            for (const page of pages) {
+                                const text = await props.getPageText(page)
+                                texts.push(`第${page}页：\n${text}`)
+                            }
+                            setContent(texts.join('\n\n---\n\n'))
+                        } catch (error) {
+                            console.error('Failed to load page text:', error)
+                            setContent('加载失败')
+                        } finally {
+                            setLoading(false)
+                        }
+                    }
+                    
+                    loadContent()
+                }, [pages])
+                
+                if (loading) {
+                    return <div style={{ padding: '20px', textAlign: 'center' }}>加载中...</div>
+                }
+                
+                return (
+                    <div style={{ maxWidth: 500, maxHeight: 400, overflow: 'auto', whiteSpace: 'pre-wrap' }}>
+                        {content}
+                    </div>
+                )
+            }
+            
+            // 解析文本中的附件标签并渲染
+            const parseAndRenderContent = (text: string) => {
+                // 匹配 [ATTACHMENT:1,2,3] 格式的标签
+                const attachmentRegex = /\[ATTACHMENT:([\d,]+)\]/g
+                const parts: React.ReactNode[] = []
+                let lastIndex = 0
+                let match: RegExpExecArray | null
+                
+                while ((match = attachmentRegex.exec(text)) !== null) {
+                    // 添加标签前的文本
+                    if (match.index > lastIndex) {
+                        const textBefore = text.substring(lastIndex, match.index)
+                        parts.push(<MarkdownContent key={`text-${lastIndex}`} text={textBefore} />)
+                    }
+                    
+                    // 解析页码
+                    const pagesStr = match[1]
+                    const pages = pagesStr.split(',').map(p => parseInt(p.trim(), 10)).filter(p => !isNaN(p))
+                    
+                    // 添加附件徽章
+                    if (pages.length > 0) {
+                        parts.push(
+                            <div 
+                                key={`attachment-${match.index}`} 
+                                style={{ marginBottom: '8px', marginTop: '8px' }}
+                                onClick={(e) => e.stopPropagation()}
+                                onMouseDown={(e) => e.stopPropagation()}
+                            >
+                                <Popover
+                                    content={<AttachmentPopoverContent pages={pages} />}
+                                    title="附件页面内容"
+                                    trigger="click"
+                                >
+                                    <span style={{
+                                        display: 'inline-block',
+                                        padding: '4px 8px',
+                                        background: '#e6f7ff',
+                                        border: '1px solid #91d5ff',
+                                        borderRadius: '4px',
+                                        color: '#0958d9',
+                                        cursor: 'pointer',
+                                        fontSize: '12px',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = '#bae7ff'
+                                        e.currentTarget.style.borderColor = '#69c0ff'
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = '#e6f7ff'
+                                        e.currentTarget.style.borderColor = '#91d5ff'
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    >
+                                        📎 附件: {compressContinuousPages(pages).map((item, idx) => (
+                                            <span key={idx}>
+                                                {idx > 0 && ', '}
+                                                {item.type === 'range' ? `第${item.start}–${item.end}页` : `第${item.page}页`}
+                                            </span>
+                                        ))}
+                                    </span>
+                                </Popover>
+                            </div>
+                        )
+                    }
+                    
+                    lastIndex = attachmentRegex.lastIndex
+                }
+                
+                // 添加最后剩余的文本
+                if (lastIndex < text.length) {
+                    const textAfter = text.substring(lastIndex)
+                    parts.push(<MarkdownContent key={`text-${lastIndex}`} text={textAfter} />)
+                }
+                
+                return parts.length > 0 ? parts : <MarkdownContent text={text} />
+            }
+            
+            return <div style={{ margin: '8px 0 8px 15px'}}>
+                <div className={`comment-content ${isExpanded ? 'expanded' : 'collapsed'}`} onMouseDown={(e) => { e.stopPropagation(); console.log('[Comment] toggleMain via content', { id: annotation.id, from: isExpanded, to: !isExpanded }); setExpandedCommentIds(prev => ({ ...prev, [annotation.id]: !isExpanded })) }}>
+                    {parseAndRenderContent(displayText)}
+                </div>
+                {isLong && (
+                    <Button type="link" size="small" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); console.log('[Comment] toggleMain via button', { id: annotation.id, from: isExpanded, to: !isExpanded }); setExpandedCommentIds(prev => ({ ...prev, [annotation.id]: !isExpanded })) }}>
+                        {isExpanded ? t('normal.collapse') : t('normal.expand')}
+                    </Button>
+                )}
+            </div>
         },
-        [editAnnotation, currentAnnotation]
+        [editAnnotation, currentAnnotation, expandedCommentIds]
     )
 
     // 回复框
@@ -488,9 +663,23 @@ const CustomComment = forwardRef<CustomCommentRef, CustomCommentProps>(function 
                 )
             }
 
-            return <p>{reply.content}</p>
+            const rawText = reply.content || ''
+            const lineCount = rawText.split(/\r?\n/).length
+            const isLong = (lineCount > 10)
+            const isExpanded = !!expandedReplyIds[reply.id]
+            console.log('[Comment] renderReply', { id: reply.id, lineCount, isLong, isExpanded })
+            return <>
+                <div className={`comment-content ${isExpanded ? 'expanded' : 'collapsed'}`} onMouseDown={(e) => { e.stopPropagation(); console.log('[Comment] toggleMain via content', { id: annotation.id, from: isExpanded, to: !isExpanded }); setExpandedCommentIds(prev => ({ ...prev, [annotation.id]: !isExpanded })) }}>
+                    <MarkdownContent text={rawText} />
+                </div>
+                {isLong && (
+                    <Button type="link" size="small" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); console.log('[Comment] toggleReply via button', { id: reply.id, from: isExpanded, to: !isExpanded }); setExpandedReplyIds(prev => ({ ...prev, [reply.id]: !isExpanded })) }}>
+                        {isExpanded ? t('normal.collapse') : t('normal.expand')}
+                    </Button>
+                )}
+            </>
         },
-        [replyAnnotation, currentReply]
+        [replyAnnotation, currentReply, expandedReplyIds]
     )
 
     const comments = Object.entries(groupedAnnotations).map(([pageNumber, annotationsForPage]) => {

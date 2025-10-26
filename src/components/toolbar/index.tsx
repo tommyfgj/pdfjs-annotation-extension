@@ -2,7 +2,7 @@ import './index.scss'
 import { Button, ColorPicker, message, Popover, Space } from 'antd'
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
 import { annotationDefinitions, AnnotationType, IAnnotationStyle, IAnnotationType, PdfjsAnnotationEditorType } from '../../const/definitions'
-import { AnnoIcon, ExportIcon, PaletteIcon, SaveIcon } from '../../const/icon'
+import { AnnoIcon, ExportIcon, PaletteIcon, SaveIcon, SendToAIIcon } from '../../const/icon'
 import { SignatureTool } from './signature'
 import { FilePdfOutlined, PlusCircleOutlined } from '@ant-design/icons'
 import { StampTool } from './stamp'
@@ -17,12 +17,16 @@ interface CustomToolbarProps {
     onSave: () => void
     onExport: (type: 'pdf' | 'excel') => void
     onSidebarOpen: (open: boolean) => void
+    onChatSidebarOpen: (open: boolean) => void
 }
 
 export interface CustomToolbarRef {
     activeAnnotation(annotation: IAnnotationType): void
     updateStyle(annotationType: AnnotationType, style: IAnnotationStyle): void
     toggleSidebarBtn(open: boolean): void
+    toggleChatSidebarBtn(open: boolean): void
+    setSidebarOpen(open: boolean): void
+    setChatSidebarOpen(open: boolean): void
 }
 
 /**
@@ -40,12 +44,21 @@ const CustomToolbar = forwardRef<CustomToolbarRef, CustomToolbarProps>(function 
     )
     const [dataTransfer, setDataTransfer] = useState<string | null>(null)
     const [sidebarOpen, setSidebarOpen] = useState<boolean>(props.defaultSidebarOpen)
+    const [chatSidebarOpen, setChatSidebarOpen] = useState<boolean>(false)
     const { t } = useTranslation()
+
+    // 监听状态变化
+    useEffect(() => {
+        console.log('📊 Toolbar state changed - sidebarOpen:', sidebarOpen, 'chatSidebarOpen:', chatSidebarOpen)
+    }, [sidebarOpen, chatSidebarOpen])
 
     useImperativeHandle(ref, () => ({
         activeAnnotation,
         toggleSidebarBtn,
-        updateStyle
+        toggleChatSidebarBtn,
+        updateStyle,
+        setSidebarOpen,
+        setChatSidebarOpen
     }))
 
     const activeAnnotation = (annotation: IAnnotationType) => {
@@ -53,7 +66,13 @@ const CustomToolbar = forwardRef<CustomToolbarRef, CustomToolbarProps>(function 
     }
 
     const toggleSidebarBtn = (open: boolean) => {
+        console.log('🔴 toggleSidebarBtn called, setting to:', open)
         setSidebarOpen(open)
+    }
+
+    const toggleChatSidebarBtn = (open: boolean) => {
+        console.log('🟡 toggleChatSidebarBtn called, setting to:', open)
+        setChatSidebarOpen(open)
     }
 
     const updateStyle = (annotationType: AnnotationType, style: IAnnotationStyle) => {
@@ -140,8 +159,15 @@ const CustomToolbar = forwardRef<CustomToolbarRef, CustomToolbarProps>(function 
     }
 
     const handleSidebarOpen = isOpen => {
+        console.log('🔴 handleSidebarOpen called, current isOpen:', isOpen, 'will set to:', !isOpen)
         props.onSidebarOpen(!isOpen)
         setSidebarOpen(!isOpen)
+    }
+
+    const handleChatSidebarOpen = isOpen => {
+        console.log('🟡 handleChatSidebarOpen called, current isOpen:', isOpen, 'will set to:', !isOpen)
+        props.onChatSidebarOpen(!isOpen)
+        setChatSidebarOpen(!isOpen)
     }
 
     return (
@@ -231,6 +257,12 @@ const CustomToolbar = forwardRef<CustomToolbarRef, CustomToolbarProps>(function 
                         <AnnoIcon />
                     </div>
                     <div className="name">{t('anno')}</div>
+                </li>
+                <li onClick={() => handleChatSidebarOpen(chatSidebarOpen)} className={`${chatSidebarOpen ? 'selected' : ''}`}>
+                    <div className="icon">
+                        <SendToAIIcon />
+                    </div>
+                    <div className="name">{t('chat.title')}</div>
                 </li>
             </ul>
         </div>

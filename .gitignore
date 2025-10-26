@@ -27,6 +27,9 @@ node_modules/
 dist/
 *.log
 
+# Build artifacts in examples
+examples/pdfjs-4.3.136-dist/web/pdfjs-annotation-extension/
+
 # stats
 stats.json
 

@@ -14,7 +14,8 @@
         "stamp": "Stamp",
         "note": "Note",
         "arrow": "Arrow",
-        "cloud": "Cloud"
+        "cloud": "Cloud",
+        "sendToAI": "Send to AI"
     },
     "toolbar": {
         "buttons": {
@@ -81,7 +82,12 @@
         "default": "Default",
         "custom": "Custom",
         "strokeWidth": "Stroke",
-        "opacity": "Opacity"
+        "opacity": "Opacity",
+        "expand": "Expand",
+        "collapse": "Collapse",
+        "copy": "Copy",
+        "copySuccess": "Copied to clipboard",
+        "copyFail": "Copy failed"
     },
     "comment": {
         "total": "Comment {{value}}",
@@ -128,5 +134,18 @@
             "annotation": "Annotation",
             "reply": "Reply"
         }
+    },
+    "chat": {
+        "title": "AI Assistant",
+        "clear": "Clear",
+        "send": "Send",
+        "stop": "Stop",
+        "emptyHint": "Chat dialog will open automatically when you select PDF text",
+        "inputPlaceholder": "Type a message... (Enter to send, Shift+Enter for new line)",
+        "explainPrompt": "Please explain the following",
+        "error": "Sorry, an error occurred. Please try again later",
+        "addToAnnotation": "Add to Annotation",
+        "clickToAddAnnotation": "Click on the PDF to add annotation",
+        "addedToAnnotation": "Added to annotation"
     }
 }

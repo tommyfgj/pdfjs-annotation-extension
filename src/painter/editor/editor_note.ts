@@ -12,7 +12,11 @@ export class EditorNote extends Editor {
 
     protected async mouseUpHandler(e: KonvaEventObject<PointerEvent>) {
         const color = 'rgb(255, 222, 33)'
-        const { x, y } = this.konvaStage.getRelativePointerPosition()
+        // 兼容从外部注入的 clientX/clientY 位置
+        const pointer = this.konvaStage.getPointerPosition()
+        const pos = pointer ? pointer : this.konvaStage.getRelativePointerPosition()
+        const x = pos?.x ?? 50
+        const y = pos?.y ?? 50
         if (e.currentTarget !== this.konvaStage) {
             return
         }
@@ -27,7 +31,7 @@ export class EditorNote extends Editor {
         this.setShapeGroupDone({
             id,
             contentsObj: {
-                text: ''
+                text: this.currentShapeGroup?.annotation ? (this.currentShapeGroup.annotation as any).pendingText ?? '' : ''
             },
             color
         })

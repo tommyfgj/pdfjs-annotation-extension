@@ -14,7 +14,8 @@
         "stamp": "盖章",
         "note": "注解",
         "arrow": "箭头",
-        "cloud": "云线"
+        "cloud": "云线",
+        "sendToAI": "发送到 AI"
     },
     "toolbar": {
         "buttons": {
@@ -81,7 +82,12 @@
         "default": "默认",
         "custom": "自定义",
         "strokeWidth": "笔触宽度",
-        "opacity": "透明度"
+        "opacity": "透明度",
+        "expand": "展开",
+        "collapse": "收起",
+        "copy": "复制",
+        "copySuccess": "已复制到剪贴板",
+        "copyFail": "复制失败"
     },
     "comment": {
         "total": " {{value}} 条批注",
@@ -128,5 +134,18 @@
             "annotation": "批注",
             "reply": "回复"
         }
+    },
+    "chat": {
+        "title": "AI 助手",
+        "clear": "清空",
+        "send": "发送",
+        "stop": "停止",
+        "emptyHint": "AI 助手",
+        "inputPlaceholder": "输入消息... (Enter 发送, Shift+Enter 换行)",
+        "explainPrompt": "请解释以下内容",
+        "error": "抱歉，发生了错误，请稍后重试",
+        "addToAnnotation": "添加到批注",
+        "clickToAddAnnotation": "请在PDF上点击位置添加批注",
+        "addedToAnnotation": "已添加到批注"
     }
 }

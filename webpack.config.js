@@ -1,6 +1,7 @@
 const path = require('path')
 const ImageMinimizerPlugin = require('image-minimizer-webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+const CopyWebpackPlugin = require('copy-webpack-plugin')
 const environment = require('./configuration/environment')
 
 module.exports = {
@@ -61,22 +62,23 @@ module.exports = {
     },
     optimization: {
         minimizer: [
-            '...',
-            new ImageMinimizerPlugin({
-                minimizer: {
-                    implementation: ImageMinimizerPlugin.imageminMinify,
-                    options: {
-                        plugins: [
-                            [
-                                'svgo',
-                                {
-                                    plugins: [{ name: 'removeViewBox', active: false }]
-                                }
-                            ]
-                        ]
-                    }
-                }
-            })
+            '...'
+            // Disabled ImageMinimizerPlugin to avoid build errors
+            // new ImageMinimizerPlugin({
+            //     minimizer: {
+            //         implementation: ImageMinimizerPlugin.imageminMinify,
+            //         options: {
+            //             plugins: [
+            //                 [
+            //                     'imagemin-svgo',
+            //                     {
+            //                         plugins: [{ name: 'removeViewBox', active: false }]
+            //                     }
+            //                 ]
+            //             ]
+            //         }
+            //     }
+            // })
         ]
     },
     cache: {
@@ -85,7 +87,55 @@ module.exports = {
     plugins: [
         new CleanWebpackPlugin({
             verbose: true
-        })
+        }),
+        // 复制 pdf-parse worker 文件
+        new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: path.resolve(__dirname, '../node_modules/pdf-parse/dist/pdf-parse/web/pdf.worker.mjs'),
+                    to: path.resolve(environment.paths.output, 'pdf.worker.mjs')
+                }
+            ]
+        }),
+        // 编译完成后自动复制到 Next.js public 目录
+        {
+            apply: (compiler) => {
+                compiler.hooks.afterEmit.tap('CopyToPublic', (compilation) => {
+                    const fs = require('fs')
+                    const path = require('path')
+                    
+                    const sourceDir = environment.paths.output
+                    const targetDir = environment.paths.publicOutput
+                    
+                    // 递归复制目录
+                    function copyDir(src, dest) {
+                        if (!fs.existsSync(dest)) {
+                            fs.mkdirSync(dest, { recursive: true })
+                        }
+                        
+                        const entries = fs.readdirSync(src, { withFileTypes: true })
+                        
+                        for (let entry of entries) {
+                            const srcPath = path.join(src, entry.name)
+                            const destPath = path.join(dest, entry.name)
+                            
+                            if (entry.isDirectory()) {
+                                copyDir(srcPath, destPath)
+                            } else {
+                                fs.copyFileSync(srcPath, destPath)
+                            }
+                        }
+                    }
+                    
+                    try {
+                        copyDir(sourceDir, targetDir)
+                        console.log(`✅ 已复制编译产物到: ${targetDir}`)
+                    } catch (err) {
+                        console.error('❌ 复制文件失败:', err)
+                    }
+                })
+            }
+        }
     ],
     target: 'web'
 }

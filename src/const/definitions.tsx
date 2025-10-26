@@ -12,7 +12,8 @@ import {
     UnderlineIcon,
     NoteIcon,
     ArrowIcon,
-    CloudIcon
+    CloudIcon,
+    SendToAIIcon
 } from './icon'
 import { IRect } from 'konva/lib/types'
 import { defaultOptions } from './default_options'
@@ -99,7 +100,8 @@ export enum AnnotationType {
     STAMP = 10, // 盖章批注
     NOTE = 11, // 注释
     ARROW = 12, // 箭头批注
-    CLOUD = 13 // 云线
+    CLOUD = 13, // 云线
+    SEND_TO_AI = 14 // 发送到 AI
 }
 
 // 定义批注类型的接口
@@ -151,7 +153,10 @@ export enum CommentStatus {
 }
 
 export interface IAnnotationContentsObj {
-    text: string; // 文本内容
+    text: string; // 文本内容（完整内容，包含原文）
+    displayText?: string; // 用于显示的文本（不包含原文）
+    selectedText?: string; // 用户选中的原文
+    attachmentPages?: number[]; // 附件页码列表
     image?: string; // 可选的图片属性
 }
 
@@ -245,6 +250,16 @@ export const annotationDefinitions: IAnnotationType[] = [
             opacity: false,
             strokeWidth: false
         } // 是否可编辑样式
+    },
+    {
+        name: 'sendToAI',
+        type: AnnotationType.SEND_TO_AI,
+        pdfjsEditorType: PdfjsAnnotationEditorType.HIGHLIGHT,
+        pdfjsAnnotationType: PdfjsAnnotationType.NONE,
+        isOnce: false,
+        resizable: false,
+        draggable: false,
+        icon: <SendToAIIcon />,
     },
     {
         name: 'rectangle',

@@ -7,5 +7,7 @@ module.exports = {
     source: path.resolve(__dirname, '../src/'),
     /* Path to built files directory */
     output: path.resolve(__dirname, '../examples/pdfjs-4.3.136-dist/web/pdfjs-annotation-extension'),
+    /* Path to Next.js public directory for auto-sync */
+    publicOutput: path.resolve(__dirname, '../../public/pdfjs-annotation-extension'),
   }
 };

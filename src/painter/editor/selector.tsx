@@ -206,7 +206,7 @@ export class Selector {
      * @param konvaStage
      */
     private createTransformer(group: Konva.Group, konvaStage: Konva.Stage, flash: boolean) {
-        const line = group.children[0] as Konva.Line
+        const firstChild = group.children[0] as any
         const groupId = group.id()
         this.currentTransformerId = groupId
         const rawAnnotationStore = this.getAnnotationStore(groupId)
@@ -229,7 +229,8 @@ export class Selector {
             }
         })
 
-        if (line.attrs.id && line.attrs.id === 'note') {
+        // Note 类型不允许缩放
+        if ((firstChild && firstChild.attrs && firstChild.attrs.id === 'note') || rawAnnotationStore.subtype === 'Text') {
             transformer.resizeEnabled(false)
         }
         group.draggable(rawAnnotationStore.draggable)

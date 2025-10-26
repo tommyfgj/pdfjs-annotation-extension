@@ -1,0 +1,46 @@
+.CustomSidebar {
+    position: fixed;
+    right: 0;
+    top: 107px;
+    bottom: 0;
+    width: 330px;
+    background: #fff;
+    border-left: 1px solid #e8e8e8;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+
+    &-tabs {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+
+        .ant-tabs-nav {
+            margin: 0;
+            padding: 0 16px;
+            background: #fafafa;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .ant-tabs-content-holder {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .ant-tabs-content {
+            height: 100%;
+        }
+
+        .ant-tabs-tabpane {
+            height: 100%;
+            overflow: hidden;
+        }
+    }
+
+    // 确保comment和chat组件填满标签页
+    .CustomComment,
+    .CustomChat {
+        height: 100%;
+    }
+}

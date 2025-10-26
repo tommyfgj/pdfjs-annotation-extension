@@ -1,6 +1,6 @@
 .PdfjsAnnotationExtension_Comment_hidden {
     .CustomComment {
-        display: none;
+        display: none !important;
     }
 }
 .CustomComment_filterContent {
@@ -53,11 +53,45 @@
             .ant-typography{
                 color: var(--main-color) !important;
             }
-            p {
-                white-space: pre-wrap;
-                line-height: 150%;
+            .comment-content {
+                position: relative;
+                max-height: none;
+                overflow: visible;
+                cursor: pointer;
+            }
+            .comment-content.collapsed {
+                max-height: 15em; /* roughly 10 lines with line-height: 1.5 */
+                overflow: hidden;
+            }
+            .comment-content.collapsed::after {
+                /* ensure clicks are handled by container */
+                content: '';
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: 32px;
+                background: linear-gradient(to bottom, rgba(255,255,255,0), var(--toolbar-bg-color));
+                pointer-events: none;
+            }
+            .markdown-body {
+                white-space: normal;
                 padding: 0;
                 margin-top: 5px;
+                background: transparent !important;
+                color: white !important;
+                
+                * { color: white !important; }
+                code { background: rgba(255,255,255,.15); padding: 0 3px; border-radius: 3px; color: white !important; }
+                pre { background: rgba(255,255,255,.1); padding: 8px; border-radius: 6px; overflow: auto; color: white !important; }
+                a { color: #69c0ff !important; text-decoration: underline; }
+                h1, h2, h3, h4, h5, h6 { margin: 6px 0; font-weight: 600; color: white !important; }
+                strong, b { color: white !important; }
+                em, i { color: white !important; }
+                li { color: white !important; }
+                p { color: white !important; }
+                table { border-collapse: collapse; }
+                th, td { border: 1px solid var(--toolbar-border-color); padding: 4px 6px; }
             }
             .title {
                 display: flex;
@@ -123,20 +157,10 @@
     .CustomComment {
         width: 250px;
     }
-    .PdfjsAnnotationExtension {
-        #viewerContainer {
-            right: 250px;
-        }
-    }
 }
 @media all and (max-width: 690px) {
     .CustomComment {
         width: 150px;
-    }
-    .PdfjsAnnotationExtension {
-        #viewerContainer {
-            right: 150px;
-        }
     }
 }
 

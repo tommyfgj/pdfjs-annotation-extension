@@ -84,4 +84,11 @@ export class Store {
         }
     }
 
+    /**
+     * 清空所有批注存储（用于切换文档时重置状态）
+     */
+    public clear(): void {
+        this.annotationStore.clear()
+        this.originalAnnotationStore.clear()
+    }
 }

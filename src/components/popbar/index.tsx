@@ -2,8 +2,9 @@ import './index.scss'
 
 import { computePosition, flip } from '@floating-ui/dom'
 import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react'
-import { annotationDefinitions, IAnnotationType, PdfjsAnnotationEditorType } from '../../const/definitions'
+import { annotationDefinitions, AnnotationType, IAnnotationType, PdfjsAnnotationEditorType } from '../../const/definitions'
 import { useTranslation } from 'react-i18next'
+import { message } from 'antd'
 
 interface CustomPopbarProps {
     onChange: (annotation: IAnnotationType | null, range: Range | null) => void
@@ -93,10 +94,27 @@ const CustomPopbar = forwardRef<CustomPopbarRef, CustomPopbarProps>(function Cus
         )
     })
 
+    const handleCopy = async () => {
+        try {
+            const text = currentRange?.toString() || ''
+            if (!text) return
+            await navigator.clipboard.writeText(text)
+            message.success(t('normal.copySuccess') || t('normal.ok'))
+            close()
+        } catch (err) {
+            message.error(t('normal.copyFail') || t('normal.cancel'))
+        }
+    }
+
     return (
         <>
             <div className={`CustomPopbar ${show ? 'show' : 'hide'}`} ref={containerRef}>
-                <ul className="buttons">{buttons}</ul>
+                <ul className="buttons">
+                    {buttons}
+                    <li onClick={handleCopy}>
+                        <div className="icon">📋</div>
+                    </li>
+                </ul>
             </div>
         </>
     )
