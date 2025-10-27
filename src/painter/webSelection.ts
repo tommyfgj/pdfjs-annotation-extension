@@ -39,7 +39,7 @@ export class WebSelection {
                 this.onSelect(null)
                 return
             }
-            if (selection && selection.toString()) {
+            if (selection && selection.toString() && selection.rangeCount > 0) {
                 const range = selection.getRangeAt(0)
                 const selectedElement = range.commonAncestorContainer
                 // 检查选区是否在特定的 div 内
@@ -54,17 +54,20 @@ export class WebSelection {
             if (isSelecting) {
                 isSelecting = false // 重置状态
                 const selection = window.getSelection()
-                this.onSelect(selection.getRangeAt(0))
+                if (selection && selection.rangeCount > 0) {
+                    this.onSelect(selection.getRangeAt(0))
+                }
             }
         })
 
         // 监听触摸屏操作结束事件
         document.addEventListener('touchend', () => {
             if (isSelecting) {
-                console.log('Selection completed')
                 isSelecting = false // 重置状态
                 const selection = window.getSelection()
-                this.onSelect(selection.getRangeAt(0))
+                if (selection && selection.rangeCount > 0) {
+                    this.onSelect(selection.getRangeAt(0))
+                }
             }
         })
 

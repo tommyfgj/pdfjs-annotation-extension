@@ -40,6 +40,7 @@ export class Painter {
     private pdfViewerApplication: PDFViewerApplication // PDFViewerApplication 实例
     private pdfjsEventBus: EventBus // PDF.js EventBus 实例
     private webSelection: WebSelection // WebSelection 实例
+    private webSelectionInitialized: boolean = false // WebSelection 是否已初始化
     private currentAnnotation: IAnnotationType | null = null // 当前批注类型
     private store: Store // 存储实例
     private selector: Selector // 选择器实例
@@ -239,6 +240,8 @@ export class Painter {
         this.editorStore.clear()
         // 关闭选择器状态
         this.selector.clear()
+        // 重置 webSelection 初始化标志，允许重新初始化
+        this.webSelectionInitialized = false
     }
 
     /**
@@ -643,7 +646,11 @@ export class Painter {
      * @param rootElement - 根 DOM 元素
      */
     public initWebSelection(rootElement: HTMLDivElement): void {
+        if (this.webSelectionInitialized) {
+            return
+        }
         this.webSelection.create(rootElement)
+        this.webSelectionInitialized = true
     }
 
     /**

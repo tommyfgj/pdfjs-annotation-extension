@@ -183,15 +183,15 @@ class PdfjsAnnotationExtension {
                 this.customToolbarRef.current.activeAnnotation(annotationDefinitions[0])
             },
             onWebSelectionSelected: range => {
-                console.log('[Index] onWebSelectionSelected', { hasRange: !!range, isChatPopupOpen: this.isChatPopupOpen })
                 // 在聊天弹窗打开期间，不要把 lastSelectionRange 清空
                 if (range) {
                     this.lastSelectionRange = range
                 } else if (!this.isChatPopupOpen) {
                     this.lastSelectionRange = null
                 }
-                console.log('[Index] lastSelectionRange set', { hasLast: !!this.lastSelectionRange })
-                this.customPopbarRef.current.open(range)
+                if (this.customPopbarRef.current) {
+                    this.customPopbarRef.current.open(range)
+                }
             },
             onStoreAdd: (annotation, isOriginal, currentAnnotation) => {
                 this.customCommentRef.current?.addAnnotation(annotation)
@@ -301,6 +301,11 @@ class PdfjsAnnotationExtension {
         
         // 立即尝试恢复上次打开的文档，在默认文档加载之前
         this.restoreLastDocument()
+        
+        // 如果 PDF 已经加载完成（首次加载时可能已经加载），立即初始化 webSelection
+        if (this.PDFJS_PDFViewerApplication?.pdfDocument) {
+            this.painter.initWebSelection(this.$PDFJS_viewerContainer)
+        }
     }
 
     /**
@@ -707,6 +712,7 @@ class PdfjsAnnotationExtension {
 
         // 监听文档加载完成事件
         this.PDFJS_EventBus._on('documentloaded', async () => {
+            console.log('[Index] documentloaded event fired')
             // 切换文档时先重置所有状态，避免重复项
             this.painter.resetForNewDocument()
             // 清空侧栏批注列表显示
